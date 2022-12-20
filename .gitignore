@@ -118,6 +118,8 @@ venv.bak/
 .ropeproject
 
 Batch_Producer/Datasets/
+RealTime_Producer/Datasets/
+
 
 # mkdocs documentation
 /site

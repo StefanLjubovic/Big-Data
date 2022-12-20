@@ -3,55 +3,43 @@ import os
 import kafka.errors
 import time
 from kafka import TopicPartition
-from threading import Thread
+import threading
 
 def con1(consumer):
+    print("bbbb")
     for msg in consumer:
         print(msg)
 
 
+if __name__ == "__main__":
+    KAFKA_BROKER = os.environ["KAFKA_BROKER"]
+    TOPIC = os.environ["MOVIE_DETAILS"]
+    master = "spark://MASTER_PUBLIC_DNS:7077" 
+    while True:
+        try:
+            consumer1 = KafkaConsumer(
+                bootstrap_servers=KAFKA_BROKER.split(","),
+                group_id='grp1',
+                )
+            consumer2 = KafkaConsumer(
+                bootstrap_servers=KAFKA_BROKER.split(","),
+                group_id='grp1',
+                )
+            consumer3 = KafkaConsumer(
+                bootstrap_servers=KAFKA_BROKER.split(","),
+                group_id='grp1',
+                )
+            print("Connected to Kafka!")
+            break
+        except kafka.errors.NoBrokersAvailable as e:
+            print(e)
+            time.sleep(3)
+    time.sleep(30)
+    consumer1.assign([TopicPartition(TOPIC, 0)])
+    consumer2.assign([TopicPartition(TOPIC, 1)])
+    consumer3.assign([TopicPartition(TOPIC, 2)])
+    for msg in consumer2:
+        print(msg)
 
-KAFKA_BROKER = os.environ["KAFKA_BROKER"]
-TOPIC = os.environ["MOVIE_DETAILS"]
 
-while True:
-    try:
-        consumer1 = KafkaConsumer(
-            bootstrap_servers=KAFKA_BROKER.split(","),
-            group_id='grp1',
-            )
-        consumer2 = KafkaConsumer(
-            bootstrap_servers=KAFKA_BROKER.split(","),
-            group_id='grp1',
-            )
-        print("Connected to Kafka!")
-        break
-    except kafka.errors.NoBrokersAvailable as e:
-        print(e)
-        time.sleep(3)
-time.sleep(15)
-consumer1.assign([TopicPartition(TOPIC, 0)])
-consumer2.assign([TopicPartition(TOPIC, 1)])
-
-threads = []
-
-t1 = Thread(target=con1, args=(consumer1))
-t2 = Thread(target=con1, args=(consumer2))
-threads.append(t1)
-threads.append(t2)
-
-for x in threads:
-     x.start()
-
- # Wait for all of them to finish
-for x in threads:
-     x.join()
-
-# for message in consumer1:
-#         print("Consumer 1   "+str(it))
-#         it +=1
-# it1 = 0
-# for message in consumer1:
-#         print("Consumer 2   "+str(it))
-#         it1 +=1
 

@@ -74,17 +74,53 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
       KAFKA_BROKER_ID: 1
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
     volumes:
       - kafka1:/var/lib/kafka/data
     depends_on:
       - zoo1
-  
+  kafka2:
+    image: confluentinc/cp-kafka:5.5.12
+    container_name: kafka2
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka2:19093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+    volumes:
+      - kafka2:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+  kafka3:
+    image: confluentinc/cp-kafka:5.5.12
+    container_name: kafka3
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka3:19094,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+    volumes:
+      - kafka3:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+
   init-kafka:
     image: confluentinc/cp-kafka:6.1.1
     depends_on:
       - kafka1
+      - kafka2
+      - kafka3
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
@@ -93,14 +129,14 @@ services:
 
       echo -e 'Creating kafka topics'
       kafka-topics --bootstrap-server kafka1:19092 --delete --if-exists --topic movie-detail
-      kafka-topics --bootstrap-server kafka1:19092 --create --if-not-exists --topic movie-detail --replication-factor 1 --partitions 3
-      kafka-topics --bootstrap-server kafka1:19092 --create --if-not-exists --topic movie-recensions --replication-factor 1 --partitions 3
+      kafka-topics --bootstrap-server kafka1:19092 --create --if-not-exists --topic movie-detail --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka1:19092 --create --if-not-exists --topic movie-recensions --replication-factor 3 --partitions 2
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka1:19092 --list
       "
 
-  producer1:
+  batch_producer1:
     build: ../Batch_Producer/
     container_name: kafka_producer_1
     environment:
@@ -108,6 +144,9 @@ services:
       MOVIE_DETAILS: "movie-detail"
     depends_on:
       - kafka1
+      - kafka2
+      - kafka3
+      
   batch_consumer1:
     build: ../Batch_Consumer/
     container_name: kafka_consumer_1
@@ -116,6 +155,8 @@ services:
       MOVIE_DETAILS: "movie-detail"
     depends_on:
       - kafka1
+      - kafka2
+      - kafka3
 
   # hue:
   #   image: gethue/hue:20201111-135001
@@ -136,3 +177,6 @@ volumes:
   zoo1:
   zoo1log:
   kafka1:
+  kafka2:
+  kafka3:
+
