@@ -4,6 +4,8 @@ import kafka.errors
 import time
 from kafka import TopicPartition
 import threading
+from pyspark import SparkConf, SparkContext
+from pyspark.sql import SparkSession
 
 def con1(consumer):
     print("bbbb")
@@ -11,10 +13,15 @@ def con1(consumer):
         print(msg)
 
 
+def quiet_logs(sc):
+  logger = sc._jvm.org.apache.log4j
+  logger.LogManager.getLogger("org"). setLevel(logger.Level.ERROR)
+  logger.LogManager.getLogger("akka").setLevel(logger.Level.ERROR)
+
 if __name__ == "__main__":
     KAFKA_BROKER = os.environ["KAFKA_BROKER"]
     TOPIC = os.environ["MOVIE_DETAILS"]
-    master = "spark://MASTER_PUBLIC_DNS:7077" 
+    master = "spark://spark-master:7077" 
     while True:
         try:
             consumer1 = KafkaConsumer(
@@ -34,12 +41,14 @@ if __name__ == "__main__":
         except kafka.errors.NoBrokersAvailable as e:
             print(e)
             time.sleep(3)
-    time.sleep(30)
-    consumer1.assign([TopicPartition(TOPIC, 0)])
-    consumer2.assign([TopicPartition(TOPIC, 1)])
-    consumer3.assign([TopicPartition(TOPIC, 2)])
-    for msg in consumer2:
-        print(msg)
+
+    time.sleep(40)
+    spark = SparkSession.builder \
+        .master(master) \
+        .appName("Spark Swarm") \
+        .getOrCreate()
+    quiet_logs(spark)
+
 
 
 

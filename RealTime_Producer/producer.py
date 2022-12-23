@@ -23,12 +23,14 @@ mod = 0
 time.sleep(30)
 print("Passed")
 
-with open('./Datasets/IMDB_reviews.json') as f:
-    for line in f:
+with open('./Datasets/rotten_tomatoes_critic_reviews.csv','r') as f:
+    reader = csv.reader(f, delimiter = '\t')
+    for messages in reader:
         if mod % 3 ==0 :
-            producer.send(TOPIC, line.encode(),partition=0)
+            producer.send(TOPIC, messages.encode(),partition=0)
         elif mod % 3 ==1 :
-            producer.send(TOPIC, line.encode(),partition=1)
+            producer.send(TOPIC, messages.encode(),partition=1)
         else:
-            producer.send(TOPIC, line.encode(),partition=2)
+            producer.send(TOPIC, messages.encode(),partition=2)
         mod += 1
+        producer.flush()

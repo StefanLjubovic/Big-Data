@@ -2,53 +2,62 @@ version: '3'
 
 services:
 
-  # namenode:
-  #   image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
-  #   container_name: namenode
-  #   volumes:
-  #     - hadoop_namenode:/hadoop/dfs/name
-  #   environment:
-  #     - CLUSTER_NAME=test
-  #   env_file:
-  #     - ./hadoop.env
-  #   ports:
-  #     - 9870:9870
-  #     - 9000:9000
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 9870:9870
+      - 9000:9000
 
-  # datanode1:
-  #   image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-  #   container_name: datanode1
-  #   depends_on:
-  #     - namenode
-  #   volumes:
-  #     - hadoop_datanode1:/hadoop/dfs/data
-  #   env_file:
-  #     - ./hadoop.env
+  datanode1:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode1
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode1:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode2
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode2:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
 
-  # spark-master:
-  #   image: bde2020/spark-master:3.0.1-hadoop3.2
-  #   container_name: spark-master
-  #   ports:
-  #     - 8080:8080
-  #     - 7077:7077
-  #   environment:
-  #     - PYSPARK_PYTHON=python3
-  #   env_file:
-  #     - ./hadoop.env
-  #   volumes:
-  #     - ./Batch_Consumer:/spark/primeri
+  spark-master:
+    image: bde2020/spark-master:3.0.1-hadoop3.2
+    container_name: spark-master
+    ports:
+      - 8080:8080
+      - 7077:7077
+    environment:
+      - PYSPARK_PYTHON=python3
+    env_file:
+      - ./hadoop.env
+    volumes:
+      - ./Batch_Consumer:/spark/primeri
 
-  # spark-worker1:
-  #   image: bde2020/spark-worker:3.0.1-hadoop3.2
-  #   container_name: spark-worker1
-  #   depends_on:
-  #     - spark-master
-  #   environment:
-  #     - SPARK_MASTER=spark://spark-master:7077
-  #   ports:
-  #     - 8081:8081
-  #   env_file:
-  #     - ./hadoop.env
+  spark-worker1:
+    image: bde2020/spark-worker:3.0.1-hadoop3.2
+    container_name: spark-worker1
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    ports:
+      - 8081:8081
+    env_file:
+      - ./hadoop.env
 
   zoo1:
     image: zookeeper:3.4.9
@@ -128,9 +137,11 @@ services:
       kafka-topics --bootstrap-server kafka1:19092 --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server kafka1:19092 --delete --if-exists --topic movie-detail
-      kafka-topics --bootstrap-server kafka1:19092 --create --if-not-exists --topic movie-detail --replication-factor 3 --partitions 3
-      kafka-topics --bootstrap-server kafka1:19092 --create --if-not-exists --topic movie-recensions --replication-factor 3 --partitions 2
+      kafka-topics --bootstrap-server kafka1:19092 --delete --if-exists --topic movie-recensions
+      kafka-topics --bootstrap-server kafka1:19092 --create --if-not-exists --topic movie-recensions --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka2:19093 --create --if-not-exists --topic rotten-recensions --replication-factor 3 --partitions 3
+      kafka-topics --bootstrap-server kafka3:19094 --create --if-not-exists --topic movie-detail --replication-factor 3 --partitions 1
+      kafka-topics --bootstrap-server kafka3:19094 --create --if-not-exists --topic rottem-movie-detail --replication-factor 3 --partitions 1
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka1:19092 --list
@@ -141,7 +152,7 @@ services:
     container_name: kafka_producer_1
     environment:
       KAFKA_BROKER: "kafka1:19092"
-      MOVIE_DETAILS: "movie-detail"
+      MOVIE_DETAILS: "movie-recensions"
     depends_on:
       - kafka1
       - kafka2
@@ -152,7 +163,7 @@ services:
     container_name: kafka_consumer_1
     environment:
       KAFKA_BROKER: "kafka1:19092"
-      MOVIE_DETAILS: "movie-detail"
+      MOVIE_DETAILS: "movie-recensions"
     depends_on:
       - kafka1
       - kafka2
@@ -174,6 +185,7 @@ services:
 volumes:
   hadoop_namenode:
   hadoop_datanode1:
+  hadoop_datanode2:
   zoo1:
   zoo1log:
   kafka1:
