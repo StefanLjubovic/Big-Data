@@ -1,0 +1,20 @@
+version: '3.0'
+
+
+services:
+  batch_producer1:
+    build: ./
+    container_name: kafka_producer_1
+    environment:
+      KAFKA_BROKER: "kafka1:19092"
+      MOVIE_CRITICS: "rotten-recensions"
+      CORE_CONF_fs_defaultFS: "hdfs://namenode:9000"
+    restart: on-failure
+    volumes:
+      - ../Batch_Producer/Datasets:/usr/src/app/datasets/
+    networks:
+      - data_network
+
+networks:
+  data_network:
+    external: true

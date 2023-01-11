@@ -117,8 +117,7 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-Batch_Producer/Datasets/
-RealTime_Producer/Datasets/
+Producers/Batch_Producer/Datasets/
 
 
 # mkdocs documentation

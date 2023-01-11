@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+
+  spark-master:
+    image: bde2020/spark-master:3.0.1-hadoop3.2
+    container_name: spark-master
+    ports:
+      - 8080:8080
+      - 7077:7077
+    environment:
+      - PYSPARK_PYTHON=python3
+    env_file:
+      - ./hadoop.env
+    volumes:
+      - ../Producers/Batch_Producer/:/spark/primeri
+      - ../SparkConsumers/:/spark/consumers
+    networks:
+      - data_network
+    # entrypoint: bash -c "./spark/bin/spark-submit  ../spark/primeri/app.py"
+    # entrypoint: bash -c "./spark/bin/spark-submit  --jars ../spark/consumers/postgresql-42.5.1.jar ../spark/consumers/transformation_zone.py"
+    # entrypoint: bash -c "./spark/bin/spark-submit  --jars ../spark/consumers/postgresql-42.5.1.jar ../spark/consumers/batch.py"
+    # entrypoint: bash -c "./spark/bin/spark-submit  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1 --jars ../spark/consumers/postgresql-42.5.1.jar ../spark/consumers/consumer.py"
+
+
+  spark-worker1:
+    image: bde2020/spark-worker:3.0.1-hadoop3.2
+    container_name: spark-worker1
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    ports:
+      - 8081:8081
+    env_file:
+      - ./hadoop.env
+    networks:
+      - data_network
+  spark-worker2:
+    image: bde2020/spark-worker:3.0.1-hadoop3.2
+    container_name: spark-worker2
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    ports:
+      - 8082:8081
+    env_file:
+      - ./hadoop.env
+    networks:
+      - data_network
+
+networks:
+  data_network:
+    external: true
