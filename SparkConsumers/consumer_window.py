@@ -56,30 +56,18 @@ if __name__ == '__main__':
         .option("kafka.bootstrap.servers", "kafka2:19093") \
         .option("subscribe", TOPIC) \
         .load()
-    movie_df = spark.read.csv(HDFS_NAMENODE + "/transformation/rotten_tomatoes_movies.csv",header=True)
     df = clean_dataframe(df)
 
+    commentCounts = df.groupBy(window(df.timestamp, "1 minute", "30 seconds"), "review_type") \
+        .count() \
+            .orderBy(desc("review_type")) \
+        .limit(10) \
+        .orderBy(desc("window")) \
+             .withColumn("window", to_json(col("window")))
 
-    # df = df.filter(df.review_score.isNotNull())
-    # top_critics = df.filter("top_critic == 'True'") \
-    #           .groupBy("critic_name") \
-    #           .agg(
-    #             count("*").alias("NumOfTopCritics")
-    #           ) \
-    #           .orderBy(desc("NumOfTopCritics"))
-
-    # query1=top_critics.writeStream.outputMode("complete") \
-    # .foreachBatch(lambda df, epoch_id: write_df(df, epoch_id, "top_critic_by_critics")) \
-    # .start()
-
-    top_critics_by_publisher = df.filter("top_critic == 'True'") \
-            .groupBy("publisher_name") \
-            .agg(
-            count("*").alias("NumOfTopCriticsPublisher")
-            ) \
-            .orderBy(desc("NumOfTopCriticsPublisher"))
-
-    query=top_critics_by_publisher.writeStream.outputMode("complete") \
-    .foreachBatch(lambda df, epoch_id: write_df(df, epoch_id, "top_critic_by_publisher")) \
+    newCommentCounts = commentCounts.filter(commentCounts["review_type"] == "Fresh")
+    query=newCommentCounts.writeStream.outputMode("complete") \
+    .foreachBatch(lambda df, epoch_id: write_df(df, epoch_id, "ratng_avg_rt")) \
     .start()
+
     query.awaitTermination()

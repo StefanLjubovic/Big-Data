@@ -59,27 +59,18 @@ if __name__ == '__main__':
     movie_df = spark.read.csv(HDFS_NAMENODE + "/transformation/rotten_tomatoes_movies.csv",header=True)
     df = clean_dataframe(df)
 
-
-    # df = df.filter(df.review_score.isNotNull())
-    # top_critics = df.filter("top_critic == 'True'") \
-    #           .groupBy("critic_name") \
-    #           .agg(
-    #             count("*").alias("NumOfTopCritics")
-    #           ) \
-    #           .orderBy(desc("NumOfTopCritics"))
-
-    # query1=top_critics.writeStream.outputMode("complete") \
-    # .foreachBatch(lambda df, epoch_id: write_df(df, epoch_id, "top_critic_by_critics")) \
-    # .start()
-
-    top_critics_by_publisher = df.filter("top_critic == 'True'") \
-            .groupBy("publisher_name") \
+    count_critics = df.groupBy("rotten_tomatoes_link") \
             .agg(
-            count("*").alias("NumOfTopCriticsPublisher")
+            count("*").alias("NumberOfCritics")
             ) \
-            .orderBy(desc("NumOfTopCriticsPublisher"))
+            .orderBy(desc("NumberOfCritics"))
 
-    query=top_critics_by_publisher.writeStream.outputMode("complete") \
-    .foreachBatch(lambda df, epoch_id: write_df(df, epoch_id, "top_critic_by_publisher")) \
+    movie_df = movie_df.withColumnRenamed("rotten_tomatoes_link", "movie_id")
+    df_joined = count_critics.join(movie_df, count_critics.rotten_tomatoes_link == movie_df.movie_id, "inner")
+    df_joined = df_joined.select("NumberOfCritics", "rotten_tomatoes_link","movie_title")
+
+    query=df_joined.writeStream.outputMode("complete") \
+    .foreachBatch(lambda df, epoch_id: write_df(df, epoch_id, "critic_count")) \
     .start()
+    
     query.awaitTermination()

@@ -17,6 +17,7 @@ services:
       - ../SparkConsumers/:/spark/consumers
     networks:
       - data_network
+    # entrypoint: bash -c "sudo docker exec -it spark-master bash"
     # entrypoint: bash -c "./spark/bin/spark-submit  ../spark/primeri/app.py"
     # entrypoint: bash -c "./spark/bin/spark-submit  --jars ../spark/consumers/postgresql-42.5.1.jar ../spark/consumers/transformation_zone.py"
     # entrypoint: bash -c "./spark/bin/spark-submit  --jars ../spark/consumers/postgresql-42.5.1.jar ../spark/consumers/batch.py"
@@ -49,6 +50,7 @@ services:
       - ./hadoop.env
     networks:
       - data_network
+  
 
 networks:
   data_network:
